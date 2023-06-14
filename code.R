@@ -30,19 +30,34 @@ inTrain <-  createDataPartition(y=training$classe, times=1, p=0.70, list=FALSE)
 train <- training[inTrain,]
 test <- training[-inTrain,]
 
-fit1 <- train(classe ~ ., method = "rf", data = train, preProcess = "pca")
+fit <- train(classe ~ ., method = "rf", data = train, preProcess = "pca")
 fit2 <- train(classe ~ ., method = "gbm", data = train, verbose = FALSE, preProcess = "pca")
 fit3 <- train(classe ~ ., method = "treebag", data = train, preProcess = "pca")
 
 combo <- data.frame(fit1 = predict(fit1, test[,-53]), fit2 = predict(fit2, test[,-53]), fit3 = predict(fit3, test[,-53]), true = test[,53])
+smallComb <- data.frame(fit1 = predict(fit1, test[,-53]), fit3 = predict(fit3, test[,-53]), true = test[,53])
+smallCombVal <- data.frame(fit1 = predict(fit1, validation), fit3 = predict(fit3, validation))
+smallCombFit <- train(true ~ ., method = "gam", data = smallComb)
 
+combFit <- train(true ~ ., method = "gam", data = combo)
+predict(combFit, smallCombVal)
+combFit$finalModel
 
-
-
-
-confusionMatrix(factor(test[,53]), predict(fit3, test[,-53]))
-
+confusionMatrix(factor(test[,53]), predict(fit1, test[,-53]))
+confusionMatrix(factor(test[,53]), predict(fit1, test[,-53]))
 
 
 data.frame(num = c(1:20), pred = predict(fit1, validation))
+
+
+valid_res <- data.frame(fit1 = predict(fit1, validation), fit2 = predict(fit2, validation), fit3 = predict(fit3, validation))
+
+data.frame(predict(validation, valid_res))
+
+
+
+
+
+
+
 
