@@ -1,0 +1,94 @@
+---
+title: "Machine Learning Assignement"
+author: "Laszlo"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+The base of this analysis is the data gathered in this study: 
+  Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+  In this study, six young and healthy participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+  My goal was to try and predict the type of the excersis based on the data was collected via on-body approach, with various sensors. 
+
+## Exploratory Data Analysis and loading data
+
+```{r edaload}
+library(caret)
+library(tidyverse)
+
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", "training.csv")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", "testing.csv")
+
+training <- read.csv("training.csv")
+validation <- read.csv("testing.csv")
+
+library(DataExplorer)
+create_report(training, y = "classe")
+```
+
+  Based on the EDA created by the DataExplorer package (can be found in a separate html), we see that there are many variables which are largely NA. 
+  
+## Cleaning the data
+
+In the following, I remove these largely NA columns. Note, that amny values are not marked as NA in the dataset, so I replaced each empty value with NA. I also remove the first 7 variables, as these are not the output of the sensors. 
+```{r removeNA}
+# Function to filter columns based on NA percentage
+select_less_NA <- function(data_frame, threshold) {
+        num_rows <- nrow(data_frame)
+        na_counts <- colSums(is.na(data_frame))
+        selected_columns <- names(data_frame)[na_counts/num_rows <= threshold]
+        return(data_frame[selected_columns])
+}
+
+training <- training[,-(1:7)]
+training[training == ""] <- NA
+
+training <- select_less_NA(training, 0.0)
+```
+
+## Partitioning
+
+I partitioned the training dataset to 2 parts, training and testing. 70% of the rows will be training, and 30 testing. I will use the other set (only 20 rows), as validation. 
+
+```{r partitioning}
+inTrain <-  createDataPartition(y=training$classe, times=1, p=0.70, list=FALSE)
+train <- training[inTrain,]
+test <- training[-inTrain,]
+```
+
+## Training 
+
+I used the Random Forest prediction method for the data. 
+```{r model}
+fit <- train(classe ~ ., method = "rf", data = train)
+confusionMatrix(factor(test[,53]), predict(fit, test[,-53]))
+```
+As we can see, the model achieves a high accurancy on the testing dataset. 
+## Validation and results
+
+To validate the data, I ran the model on the validation dataset. We get the following results: 
+
+```{r valid}
+data.frame(predict(fit, validation))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
